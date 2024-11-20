@@ -1,25 +1,47 @@
+from flask import Flask, jsonify
 import requests
 from bs4 import BeautifulSoup
 
-# URL of the webpage to scrape
-url = 'https://puffer-dao.vercel.app/'  # Replace this with the actual URL
+app = Flask(__name__)
 
-# Send a GET request to fetch the webpage content
-response = requests.get(url)
+@app.route('/get-puffer-data', methods=['GET'])
+def get_puffer_data():
+    # Fetch the webpage
+    response = requests.get('https://puffer-dao.vercel.app/')
 
-# Parse the content with BeautifulSoup
-soup = BeautifulSoup(response.content, 'html.parser')
+    # Check if the page was retrieved successfully
+    if response.status_code != 200:
+        return jsonify({"error": "Failed to retrieve data from the website."}), 500
 
-# Extract the number of proposals
-proposal_count = soup.find('span', class_='text-2xl text-neutral-800 md:text-3xl').get_text(strip=True)
+    # Parse the HTML
+    soup = BeautifulSoup(response.text, 'html.parser')
 
-# Extract the total tokens locked
-total_tokens = soup.find_all('span', class_='text-2xl text-neutral-800 md:text-3xl')[1].get_text(strip=True)
+    try:
+        # Extract proposal count
+        proposal_count_element = soup.find('span', class_='text-2xl text-neutral-800 md:text-3xl')
+        proposal_count = proposal_count_element.get_text(strip=True) if proposal_count_element else "N/A"
+        
+        # Extract total tokens locked
+        total_tokens_locked_element = soup.find_all('span', class_='text-2xl text-neutral-800 md:text-3xl')[1]
+        total_tokens_locked = total_tokens_locked_element.get_text(strip=True) if total_tokens_locked_element else "N/A"
+        
+        # Extract labels for proposal and tokens
+        proposal_label_element = soup.find('span', class_='text-xl text-neutral-500')
+        proposal_label = proposal_label_element.get_text(strip=True) if proposal_label_element else "N/A"
 
-# Extract additional label (e.g., Proposal, PUFFER)
-proposal_label = soup.find('span', class_='text-xl text-neutral-500').get_text(strip=True)
-tokens_label = soup.find_all('span', class_='text-xl text-neutral-500')[1].get_text(strip=True)
+        tokens_label_element = soup.find_all('span', class_='text-xl text-neutral-500')[1]
+        tokens_label = tokens_label_element.get_text(strip=True) if tokens_label_element else "N/A"
 
-# Print the extracted data
-print(f"Proposal Count: {proposal_count} {proposal_label}")
-print(f"Total Tokens Locked: {total_tokens} {tokens_label}")
+        # Return the scraped data with field names
+        data = {
+            "Puffer_Proposal_Count": f"{proposal_count} {proposal_label}",
+            "Puffer_Total_Tokens_Locked": f"{total_tokens_locked} {tokens_label}"
+        }
+
+        return jsonify(data), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+if __name__ == '__main__':
+    app.run(debug=True)
