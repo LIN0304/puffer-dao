@@ -2,7 +2,7 @@ import requests
 from bs4 import BeautifulSoup
 
 # URL of the webpage to scrape
-url = 'https://example.com'  # Replace this with the actual URL
+url = 'https://puffer-dao.vercel.app/'  # Replace this with the actual URL
 
 # Send a GET request to fetch the webpage content
 response = requests.get(url)
